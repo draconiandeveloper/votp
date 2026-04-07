@@ -40,6 +40,8 @@ pub fn new_totp(secret []u8, digits int, expiry int) TOTP {
 pub fn (t TOTP) verify(input string) bool {
 	token := new_totp(t.secret, t.digits, t.expiry);
 	code := token.generate_totp();
-	return code == input
+
+	padded := '0'.repeat(t.digits - code.len) + code;
+	return padded == input
 }
 

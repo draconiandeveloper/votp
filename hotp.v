@@ -36,6 +36,8 @@ pub fn new_hotp(secret []u8, digits int) HOTP {
 pub fn (h HOTP) verify(input string, counter i64) bool {
 	token := new_hotp(h.secret, h.digits);
 	code := token.generate_hotp(counter);
-	return code == input
+
+	padded := '0'.repeat(h.digits - code.len) + code;
+	return padded == input
 }
 
