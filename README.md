@@ -80,6 +80,22 @@ if hotp.verify(user_input, counter) {
 }
 ```
 
+### Using this with authenticator apps.
+
+Authenticator apps will require a URI that follows the following format:
+
+```
+TOTP:
+
+otpauth://totp/{app name}?secret={URL safe base32 secret key}&issuer={app name}&algorithm=SHA512&digits={keylen}&period={interval_in_seconds}
+
+HOTP:
+
+otpauth://hotp/{app name}?secret={URL safe base32 secret key}&issuer={app name}&algorithm=SHA512&digits={keylen}&counter={counter}
+```
+
+You can generate a QR Code with this URI and that can be scanned in by most authenticator applications to test out your HOTP and TOTP implementation in real-time on real hardware with real-world latencies. It is recommended to experiment with artificial network throttling to determine how the authorization behaves in various network conditions.
+
 ### License
 V otp is licensed under MIT.
 
