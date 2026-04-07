@@ -1,49 +1,45 @@
 module votp
 
 import encoding.base32
-import regex
+import math
 import time
 
-
-struct Totp {
-	secret string
+struct TOTP {
+	secret []u8
 	digits int
-	digest string
-	interval int
+	expiry int
 }
 
-pub fn new_totp(secret string, digits int, digest string, interval int) Totp {
-	return Totp{secret: secret, digits: digits, digest: digest, interval: interval}
-}
-
-pub fn (t Totp) generate_totp() string {
-	time_slice := (time.now().unix_time()-10800) / t.interval
-	msg := u64_to_bytes(time_slice)
-	key := t.secret.to_upper()
-	query := r' '
-	mut re := regex.regex_opt(query) or { return "NAH!" }
-	res := re.replace(key, r'')
-	new_key := base32.decode(missing_pad(res).bytes()) or { return "SOMETHING_WENT_WRONG!" }
-	hash := get_hash(msg, new_key, t.digest)
-	offset := hash[(hash.len)-1] & 0xf
-	bin_code := (int(hash[offset])&0x7f)<<24 |
-		(int(hash[offset+1])&0xff)<<16 |
-		(int(hash[offset+2])&0xff)<<8 |
-		(int(hash[offset+3]) & 0xff)
-	code := bin_code % int_pow(10, t.digits)
-	return code.str()
-}
-
-
-
-
-
-pub fn (t Totp) verify(otp int) bool{
-	totp := new_totp(t.secret, t.digits, t.digest, t.interval)
-	code := totp.generate_totp()
-	if code == otp.str() {
-		return true
+pub fn (t TOTP) generate_totp() string {
+	slice := u64((time.now().unix() - 10800) / t.expiry);
+	message := u64_to_bytes(slice);
+	key := base32.decode(t.secret) or {
+		return ""
 	}
-	return false
+
+	hash := get_hash(message, key);
+	offset := hash[(hash.len) - 1] & 0xF;
+	bincode :=
+		(u32(hash[offset + 0]) & 0x7F) << 24 |
+		(u32(hash[offset + 1]) & 0xFF) << 16 |
+		(u32(hash[offset + 2]) & 0xFF) <<  8 |
+		(u32(hash[offset + 3]) & 0xFF) <<  0 ;
+	
+	code := (bincode % math.powi(10, t.digits)).str();
+	return '0'.repeat(t.digits - code.len) + code
+}
+
+pub fn new_totp(secret []u8, digits int, expiry int) TOTP {
+	return TOTP{
+		secret: secret,
+		digits: digits,
+		expiry: expiry,
+	}
+}
+
+pub fn (t TOTP) verify(input string) bool {
+	token := new_totp(t.secret, t.digits, t.expiry);
+	code := token.generate_totp();
+	return code == input
 }
 
