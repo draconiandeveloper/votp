@@ -77,7 +77,7 @@ You can generate a QR Code with this URI and that can be scanned in by most auth
 
 - [ ] Add a buffer for TOTP token verification.
 - [ ] Refactor code to match RFCs for HOTP and TOTP.
-- [ ] Test the results of HOTP and TOTP tokens on a physical device.
+- [x] Test the results of HOTP and TOTP tokens on a physical device.
 
 ### License
 V otp is licensed under MIT.

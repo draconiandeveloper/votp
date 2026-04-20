@@ -30,7 +30,7 @@ pub fn new[T](secret string, digits int, expiry int) T {
 }
 
 pub fn generate[T](otp T, counter u64) string {
-	mut msg := []u8{};
+	mut msg := []u8{len: 8};
 
 	$if T is TOTP {
 		timeslice := u64(time.utc().unix() / otp.expiry);
@@ -55,7 +55,7 @@ pub fn generate[T](otp T, counter u64) string {
 
 pub fn verify[T](otp T, input string, counter u64) bool {
 	mut token := T{};
-	
+
 	secret := base32.decode(otp.secret) or { panic(err) }.bytestr();
 	$if T is TOTP { token = new[T](secret, otp.digits, otp.expiry); }
 	$else $if T is HOTP { token = new[T](secret, otp.digits, 0); }
