@@ -17,12 +17,12 @@ pub struct TOTP {
 	expiry	int
 }
 
-pub fn new[T](secret []u8, digits int, expiry int) T {
+pub fn new[T](secret string, digits int, expiry int) T {
 	$if T is HOTP {
-		return T{secret, digits}
+		return T{base32.encode(secret.bytes()), digits}
 	}
 	$else $if T is TOTP {
-		return T{HOTP{secret, digits}, expiry}
+		return T{HOTP{base32.encode(secret.bytes()), digits}, expiry}
 	}
 	$else {
 		panic("VOTP can only initialize either HOTP or TOTP!")
@@ -56,8 +56,9 @@ pub fn generate[T](otp T, counter u64) string {
 pub fn verify[T](otp T, input string, counter u64) bool {
 	mut token := T{};
 	
-	$if T is TOTP { token = new[T](otp.secret, otp.digits, otp.expiry); }
-	$else $if T is HOTP { token = new[T](otp.secret, otp.digits, 0); }
+	secret := base32.decode(otp.secret) or { panic(err) }.bytestr();
+	$if T is TOTP { token = new[T](secret, otp.digits, otp.expiry); }
+	$else $if T is HOTP { token = new[T](secret, otp.digits, 0); }
 	$else { panic("VOTP can only verify HOTP or TOTP!") }
 
 	code := generate[T](token, counter);

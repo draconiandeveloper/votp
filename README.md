@@ -16,7 +16,6 @@ v install OdaiGH.votp
 ```v ignore
 import odaigh.votp { HOTP, TOTP }
 import readline { read_line }
-import encoding.base32
 
 // You can use a key length of 6 or 8. Anything more or less or in-between might not work correctly on some apps.
 const keylen := 6;
@@ -25,15 +24,16 @@ const keylen := 6;
 // You can add a few seconds of buffer room for network latency, but this code does not implement a buffer (yet).
 const interval_in_seconds := 30;
 
+// You can now set a string as your secret key, you must not re-use this key for multiple users because otherwise
+// there will be duplicate tokens generated which defeats the security aspect of HOTP and TOTP.
+const secret_key := "YOUR_SECRET";
+
 // If we're using HOTP, then we have a counter variable that increments upon each *successful* token entry.
 mut counter := 0;
 
-// Encode our secret key in Base32 (generate a new secret key per user otherwise everyone will have the exact same token!)
-key := base32.encode(string("YOUR_SECRET").bytes());
-
 // Initialize the HOTP or TOTP structure, I opted to change from SHA512 to SHA1 to match the RFCs for HOTP and TOTP.
-totp := votp.new[TOTP](key, keylen, interval_in_seconds);
-hotp := votp.new[HOTP](key, keylen, interval_in_seconds);
+totp := votp.new[TOTP](secret_key, keylen, interval_in_seconds);
+hotp := votp.new[HOTP](secret_key, keylen, interval_in_seconds);
 
 // Generate the HOTP or TOTP token string.
 totp_token := votp.generate[TOTP](totp, counter);
