@@ -1,4 +1,4 @@
-# V OTP 0.2
+# V OTP 0.3
 
 votp enables you to add TOTP or HOTP functionaltiies in your code [the V programming language](https://vlang.io).
 
@@ -12,12 +12,11 @@ v install OdaiGH.votp
 ```
 
 ## Usage
-Time-based one-time password is as follows
 
 ```v ignore
+import odaigh.votp { HOTP, TOTP }
 import readline { read_line }
 import encoding.base32
-import odaigh.votp
 
 // You can use a key length of 6 or 8. Anything more or less or in-between might not work correctly on some apps.
 const keylen := 6;
@@ -26,55 +25,33 @@ const keylen := 6;
 // You can add a few seconds of buffer room for network latency, but this code does not implement a buffer (yet).
 const interval_in_seconds := 30;
 
-// Encode our secret key in Base32 (generate a new secret key per user otherwise everyone will have the exact same TOTP token!)
+// If we're using HOTP, then we have a counter variable that increments upon each *successful* token entry.
+mut counter := 0;
+
+// Encode our secret key in Base32 (generate a new secret key per user otherwise everyone will have the exact same token!)
 key := base32.encode(string("YOUR_SECRET").bytes());
 
-// Initialize the TOTP structure. I decided to default to SHA512 for the digest.
-totp := votp.new_totp(key, keylen, interval_in_seconds);
+// Initialize the HOTP or TOTP structure, I opted to change from SHA512 to SHA1 to match the RFCs for HOTP and TOTP.
+totp := votp.new[TOTP](key, keylen, interval_in_seconds);
+hotp := votp.new[HOTP](key, keylen, interval_in_seconds);
 
-// Generate the TOTP token string.
-generated_otp := totp.generate_totp();
+// Generate the HOTP or TOTP token string.
+totp_token := votp.generate[TOTP](totp, counter);
+hotp_token := votp.generate[HOTP](hotp, counter);
 
-// Verify that the TOTP token is valid.
-user_input := read_line("Enter the token: ")!;
+// Verify that the HOTP or TOTP token is valid.
+totp_input := read_line("Enter ${totp_token}: ") or { exit(1) };
+hotp_input := read_line("Enter ${hotp_token}: ") or { exit(1) };
 
-if totp.verify(user_input) {
+if votp.verify[TOTP](totp, totp_input, counter) {
 	println("TOTP token successfully verified!");
 } else {
 	println("TOTP token failed to verify!");
 }
-```
 
-HMAC-based one-time password is as follows
-
-```v ignore
-import readline { read_line }
-import encoding.base32
-import odaigh.votp
-
-// You can use a key length of 6 or 8. Anything more or less or in-between might not work correctly on some apps.
-const keylen := 6;
-
-// HOTP relies on a counter, this is usually incremented after each successful HOTP authentication
-//  though the RFC 4226 specifications recommend a look-ahead to calculate multiple HOTP tokens in case of
-//  network desynchronization. This code does not follow this recommendation (yet).
-mut counter := 0;
-
-// Encode our secret key in Base32 (generate a new secret key per user otherwise everyone will have the same exact HOTP token!)
-key := base32.encode(string("YOUR_SECRET").bytes());
-
-// Initialize the HOTP structure. I decided to default to SHA512 for the digest.
-hotp := votp.new_hotp(key, keylen);
-
-// Generate the HOTP token string.
-generated_otp := hotp.generate_hotp(counter);
-
-// Verify that the HOTP token is valid.
-user_input := read_line("Enter the token: ")!;
-
-if hotp.verify(user_input, counter) {
+if votp.verify[HOTP](hotp, hotp_input, counter) {
 	println("HOTP token successfully verified!");
-	counter++;
+	counter++; // Increment upon success
 } else {
 	println("HOTP token failed to verify!");
 }
@@ -95,6 +72,12 @@ otpauth://hotp/{app name}?secret={URL safe base32 secret key}&issuer={app name}&
 ```
 
 You can generate a QR Code with this URI and that can be scanned in by most authenticator applications to test out your HOTP and TOTP implementation in real-time on real hardware with real-world latencies. It is recommended to experiment with artificial network throttling to determine how the authorization behaves in various network conditions.
+
+### Todo
+
+- [ ] Add a buffer for TOTP token verification.
+- [ ] Refactor code to match RFCs for HOTP and TOTP.
+- [ ] Test the results of HOTP and TOTP tokens on a physical device.
 
 ### License
 V otp is licensed under MIT.
