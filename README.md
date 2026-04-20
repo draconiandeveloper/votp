@@ -73,6 +73,23 @@ otpauth://hotp/{app name}?secret={URL safe base32 secret key}&issuer={app name}&
 
 You can generate a QR Code with this URI and that can be scanned in by most authenticator applications to test out your HOTP and TOTP implementation in real-time on real hardware with real-world latencies. It is recommended to experiment with artificial network throttling to determine how the authorization behaves in various network conditions.
 
+**You can use this to generate the URI:**
+```v ignore
+pub fn makeurl[T](otp T, counter u64) string {
+	urlsafe_base32 := otp.secret.bytestr().replace('=', '%3D');
+
+	$if T is TOTP {
+		return "otpauth://totp/votp?secret=${urlsafe_base32}&issuer=votp&algorithm=SHA1&digits=${otp.digits}&period=${otp.expiry}"
+	}
+	$else $if T is HOTP {
+		return "otpauth://hotp/votp?secret=${urlsafe_base32}&issuer=votp&algorithm=SHA1&digits=${otp.digits}&counter=${counter}"
+	}
+	$else { 
+		panic("VOTP can only generate URLs with HOTP or TOTP!")
+	}
+}
+```
+
 ### Todo
 
 - [ ] Add a buffer for TOTP token verification.
