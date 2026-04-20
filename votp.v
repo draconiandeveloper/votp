@@ -1,5 +1,6 @@
 module votp
 
+import encoding.binary
 import encoding.base32
 import crypto.sha1
 import crypto.hmac
@@ -12,23 +13,8 @@ pub struct HOTP {
 }
 
 pub struct TOTP {
-	secret	[]u8
-	digits	int
+	HOTP
 	expiry	int
-}
-
-fn u64_to_bytes(number i64) []u8 {
-	mut bytes := []u8{len: 8};
-	mut nn := number;
-	mut iter := 7;
-
-	for iter >= 0 {
-		bytes[iter] = u8(nn & 0xFF);
-		nn >>= 8;
-		iter--;
-	}
-
-	return bytes
 }
 
 pub fn new[T](secret []u8, digits int, expiry int) T {
@@ -36,21 +22,21 @@ pub fn new[T](secret []u8, digits int, expiry int) T {
 		return T{secret, digits}
 	}
 	$else $if T is TOTP {
-		return T{secret, digits, expiry}
+		return T{HOTP{secret, digits}, expiry}
 	}
 	$else {
 		panic("VOTP can only initialize either HOTP or TOTP!")
 	}
 }
 
-pub fn generate[T](otp T, counter int) string {
+pub fn generate[T](otp T, counter u64) string {
 	mut msg := []u8{};
 
 	$if T is TOTP {
 		timeslice := u64(time.utc().unix() / otp.expiry);
-		msg = u64_to_bytes(timeslice);
+		binary.big_endian_put_u64(mut msg, timeslice);
 	}
-	$else $if T is HOTP { msg = u64_to_bytes(counter); }
+	$else $if T is HOTP { binary.big_endian_put_u64(mut msg, counter); }
 	$else { panic("VOTP can only generate HOTP or TOTP!") }
 
 	
@@ -67,7 +53,7 @@ pub fn generate[T](otp T, counter int) string {
 	return '0'.repeat(otp.digits - code.len) + code
 }
 
-pub fn verify[T](otp T, input string, counter int) bool {
+pub fn verify[T](otp T, input string, counter u64) bool {
 	mut token := T{};
 	
 	$if T is TOTP { token = new[T](otp.secret, otp.digits, otp.expiry); }

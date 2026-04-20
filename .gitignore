@@ -28,3 +28,10 @@ screenshot*.svg
 
 # To develop examples inside ui folder
 devel
+
+# Ignore the entrypoint for testing
+main.v
+
+# Ignore the compiled binary
+votp
+votp.exe
