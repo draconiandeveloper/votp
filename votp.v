@@ -47,7 +47,7 @@ pub fn generate[T](otp T, counter int) string {
 	mut msg := []u8{};
 
 	$if T is TOTP {
-		timeslice := u64((time.now().unix() - 10800) / otp.expiry);
+		timeslice := u64(time.utc().unix() / otp.expiry);
 		msg = u64_to_bytes(timeslice);
 	}
 	$else $if T is HOTP { msg = u64_to_bytes(counter); }
