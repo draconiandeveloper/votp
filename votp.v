@@ -39,7 +39,6 @@ pub fn generate[T](otp T, counter u64) string {
 	$else $if T is HOTP { binary.big_endian_put_u64(mut msg, counter); }
 	$else { panic("VOTP can only generate HOTP or TOTP!") }
 
-	
 	key := base32.decode(otp.secret) or { panic(err) };
 	hash := hmac.new(key, msg, sha1.sum, sha1.block_size);
 	offset := hash.last() & 0xF;
